@@ -1,6 +1,6 @@
 {
   "name": "plump-store-localforage",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Plump plugin for Redis",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -49,7 +49,7 @@
     "webpack": "^2.3.3"
   },
   "peerDependencies": {
-    "plump": "kstf/plump#master"
+    "plump": "^0.12.0"
   },
   "dependencies": {
     "localforage": "^1.5.0",
