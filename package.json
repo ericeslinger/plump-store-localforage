@@ -1,6 +1,6 @@
 {
   "name": "plump-store-localforage",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Plump plugin for Redis",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -24,32 +24,32 @@
   },
   "homepage": "https://github.com/kstf/plump-store-localforage#readme",
   "devDependencies": {
-    "@types/chai": "^3.4.35",
+    "@types/chai": "^3.5.1",
     "@types/chai-as-promised": "0.0.30",
     "@types/core-js": "^0.9.41",
-    "@types/mocha": "^2.2.40",
-    "@types/node": "^7.0.12",
+    "@types/mocha": "^2.2.41",
+    "@types/node": "^7.0.14",
     "chai": "^3.5.0",
     "chai-as-promised": "^6.0.0",
     "del": "^2.2.2",
     "gulp": "gulpjs/gulp.git#4.0",
     "gulp-concat": "^2.6.1",
-    "gulp-sourcemaps": "^2.5.1",
+    "gulp-sourcemaps": "^2.6.0",
     "gulp-typescript": "^3.1.6",
-    "karma": "^1.5.0",
+    "karma": "^1.6.0",
     "karma-chrome-launcher": "^2.0.0",
     "karma-mocha": "^1.3.0",
-    "karma-spec-reporter": "0.0.30",
-    "mocha": "^3.2.0",
+    "karma-spec-reporter": "0.0.31",
+    "mocha": "^3.3.0",
     "ts-loader": "^2.0.3",
     "ts-node": "^3.0.2",
-    "tslint": "^5.0.0",
-    "tslint-eslint-rules": "^3.5.1",
+    "tslint": "^5.1.0",
+    "tslint-eslint-rules": "^4.0.0",
     "typescript": "^2.2.2",
-    "webpack": "^2.3.3"
+    "webpack": "^2.4.1"
   },
   "peerDependencies": {
-    "plump": "^0.12.0"
+    "plump": "^0.13.0"
   },
   "dependencies": {
     "localforage": "^1.5.0",
