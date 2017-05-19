@@ -50,3 +50,5 @@ describe('Redis-specific functionality', () => {
     .then((n) => expect(n).to.equal(9));
   });
 });
+
+require('./model.spec');
