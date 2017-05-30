@@ -17,10 +17,10 @@ export class LocalForageStore extends KeyValueStore {
     });
   }
 
-  addSchema(t: {typeName: string, schema: ModelSchema}) {
+  addSchema(t: {type: string, schema: ModelSchema}) {
     return super.addSchema(t)
     .then(() => {
-      return this._keys(t.typeName)
+      return this._keys(t.type)
       .then((keyArray) => {
         if (keyArray.length === 0) {
           return 0;
@@ -31,15 +31,15 @@ export class LocalForageStore extends KeyValueStore {
           .reduce((max, current) => (current > max) ? current : max, 0);
         }
       }).then((n) => {
-        this.maxKeys[t.typeName] = n;
+        this.maxKeys[t.type] = n;
       });
     });
   }
 
 
-  _keys(typeName: string): Promise<string[]> {
+  _keys(type: string): Promise<string[]> {
     return Promise.resolve(this.localforage.keys())
-    .then((keyArray) => keyArray.filter((k) => k.indexOf(`${typeName}:`) === 0));
+    .then((keyArray) => keyArray.filter((k) => k.indexOf(`${type}:`) === 0));
   }
 
   _get(k: string): Promise<ModelData> {
