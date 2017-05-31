@@ -9,6 +9,14 @@ import * as chai from 'chai';
 
 const expect = chai.expect;
 
+declare global {
+  namespace Chai {
+    interface Assertion {
+      nested: Assertion;
+    }
+  }
+}
+
 const sampleObject = {
   type: 'tests',
   attributes: {
