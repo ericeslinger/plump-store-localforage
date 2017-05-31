@@ -29,7 +29,7 @@ testSuite({
   },
 });
 
-describe('Redis-specific functionality', () => {
+describe('localforage-specific functionality', () => {
   it('should pre-allocate id values based on the store contents', () => {
     localforage.config({
       name: 'Plump TEST Storage',
@@ -41,12 +41,14 @@ describe('Redis-specific functionality', () => {
       storeName: 'localCache',
     });
     return localforage.clear()
-    .then(() => localforage.setItem(testStore.keyString({ typeName: TestType.typeName, id: 1 }), 'foo'))
-    .then(() => localforage.setItem(testStore.keyString({ typeName: TestType.typeName, id: 7 }), 'foo'))
+    .then(() => localforage.setItem(testStore.keyString({ type: TestType.type, id: 1 }), 'foo'))
+    .then(() => localforage.setItem(testStore.keyString({ type: TestType.type, id: 7 }), 'foo'))
     .then(() => testStore.addSchema(TestType))
-    .then(() => testStore.allocateId(TestType.typeName))
+    .then(() => testStore.allocateId(TestType.type))
     .then((n) => expect(n).to.equal(8))
-    .then(() => testStore.allocateId(TestType.typeName))
+    .then(() => testStore.allocateId(TestType.type))
     .then((n) => expect(n).to.equal(9));
   });
 });
+
+require('./model.spec'); // tslint:disable-line no-require-imports

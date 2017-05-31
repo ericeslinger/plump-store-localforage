@@ -6,10 +6,10 @@ export declare class LocalForageStore extends KeyValueStore {
         storeName?: string;
     });
     addSchema(t: {
-        typeName: string;
+        type: string;
         schema: ModelSchema;
     }): Promise<void>;
-    _keys(typeName: string): Promise<string[]>;
+    _keys(type: string): Promise<string[]>;
     _get(k: string): Promise<ModelData>;
     _set(k: string, v: ModelData): Promise<any>;
     _del(k: string): Promise<ModelData>;
