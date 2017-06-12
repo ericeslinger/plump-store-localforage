@@ -199,7 +199,7 @@ describe('model', () => {
       return one.save()
       .then(() => one.add('children', { id: 100 }).save())
       .then(() => one.get('relationships.children'))
-      .then((v) => expect(v.relationships.children).to.deep.equal([{ id: 100 }]));
+      .then((v) => expect(v.relationships.children).to.deep.equal([{ type: TestType.type, id: 100 }]));
     });
 
     it('should add hasMany elements by child field', () => {
@@ -207,15 +207,15 @@ describe('model', () => {
       return one.save()
       .then(() => one.add('children', { id: 100 }).save())
       .then(() => one.get('relationships.children'))
-      .then((v) => expect(v.relationships.children).to.deep.equal([{ id: 100 }]));
+      .then((v) => expect(v.relationships.children).to.deep.equal([{ type: TestType.type, id: 100 }]));
     });
 
     it('should add several hasMany elements by child field', () => {
       const one = new TestType({ name: 'frotato' }, plump);
       return one.save()
-      .then(() => one.add('children', { id: 100 }).add('children', { id: 101 }).save())
+      .then(() => one.add('children', { id: 100 }).add('children', { type: TestType.type, id: 101 }).save())
       .then(() => one.get('relationships.children'))
-      .then((v) => expect(v.relationships.children).to.deep.equal([{ id: 100 }, { id: 101 }]));
+      .then((v) => expect(v.relationships.children).to.deep.equal([{ type: TestType.type, id: 100 }, { type: TestType.type, id: 101 }]));
     });
 
     it('should remove hasMany elements', () => {
@@ -223,7 +223,7 @@ describe('model', () => {
       return one.save()
       .then(() => one.add('children', { id: 100 }).save())
       .then(() => one.get('relationships.children'))
-      .then((v) => expect(v.relationships.children).to.deep.equal([{ id: 100 }]))
+      .then((v) => expect(v.relationships.children).to.deep.equal([{ type: TestType.type, id: 100 }]))
       .then(() => one.remove('children', { id: 100 }).save())
       .then(() => one.get('relationships.children'))
       .then((v) => expect(v.relationships.children).to.deep.equal([]));
@@ -234,10 +234,10 @@ describe('model', () => {
       return one.save()
       .then(() => one.add('valenceChildren', { id: 100, meta: { perm: 1 } }).save())
       .then(() => one.get('relationships.valenceChildren'))
-      .then((v) => expect(v.relationships.valenceChildren).to.deep.equal([{ id: 100, meta: { perm: 1 } }]))
+      .then((v) => expect(v.relationships.valenceChildren).to.deep.equal([{ type: TestType.type, id: 100, meta: { perm: 1 } }]))
       .then(() => one.modifyRelationship('valenceChildren', { id: 100, meta: { perm: 2 } }).save())
       .then(() => one.get('relationships.valenceChildren'))
-      .then((v) => expect(v.relationships.valenceChildren).to.deep.equal([{ id: 100, meta: { perm: 2 } }]));
+      .then((v) => expect(v.relationships.valenceChildren).to.deep.equal([{ type: TestType.type, id: 100, meta: { perm: 2 } }]));
     });
   });
 
@@ -256,10 +256,10 @@ describe('model', () => {
         .then(() => one.add('children', { id: 100 }).save())
         .then(() => one.get('relationships.children'))
         .then((res) => expect(res).to.have.property('relationships')
-        .that.deep.equals({ children: [{ id: 100 }] }))
+        .that.deep.equals({ children: [{ type: TestType.type, id: 100 }] }))
         .then(() => onePrime.get('relationships.children'))
         .then((res) => expect(res).to.have.property('relationships')
-        .that.deep.equals({ children: [{ id: 100 }] }));
+        .that.deep.equals({ children: [{ type: TestType.type, id: 100 }] }));
       });
     });
 
@@ -350,14 +350,14 @@ describe('model', () => {
                   }
                 }
                 if (phase === 1 && v.relationships && v.relationships.children) {
-                  expect(v.relationships.children).to.deep.equal([{ id: 100 }]);
+                  expect(v.relationships.children).to.deep.equal([{ type: TestType.type, id: 100 }]);
                   phase = 2;
                 }
                 if (phase === 2) {
                   if ((v.relationships.children) && (v.relationships.children.length > 1)) {
                     expect(v.relationships.children).to.deep.equal([
-                      { id: 100 },
-                      { id: 101 },
+                      { type: TestType.type, id: 100 },
+                      { type: TestType.type, id: 101 },
                     ]);
                     subscription.unsubscribe();
                     resolve();

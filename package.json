@@ -1,6 +1,6 @@
 {
   "name": "plump-store-localforage",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Plump plugin for Redis",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -46,7 +46,7 @@
     "tslint-eslint-rules": "^4.1.1",
     "typescript": "^2.3.4",
     "webpack": "^2.6.1",
-    "plump": "^0.14.0"
+    "plump": "^0.15.1"
   },
   "dependencies": {
     "localforage": "^1.5.0",
