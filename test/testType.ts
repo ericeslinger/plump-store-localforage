@@ -1,4 +1,11 @@
-import { ModelSchema, RelationshipSchema, Model, ModelData, Schema } from 'plump';
+import {
+  ModelSchema,
+  RelationshipSchema,
+  Model,
+  ModelData,
+  Schema,
+  RelationshipItem,
+} from 'plump';
 
 export const ChildrenSchema: RelationshipSchema = {
   sides: {
@@ -51,8 +58,12 @@ export const QueryChildrenSchema: RelationshipSchema = {
         queryChildren: 'parent_id',
       },
       joinQuery: {
-        queryParents: 'on "tests"."id" = "queryParents"."child_id" and "queryParents"."perm" >= 2',
-        queryChildren: 'on "tests"."id" = "queryChildren"."parent_id" and "queryChildren"."perm" >= 2',
+        queryParents: `select array_agg(
+          jsonb_build_object('id', "query_children"."parent_id", 'meta', json_build_object('perm', "query_children"."perm"))
+        ) from "query_children" where "tests"."id" = "query_children"."child_id" and "query_children"."perm" >= 2`,
+        queryChildren: `select array_agg(
+          jsonb_build_object('id', "query_children"."child_id", 'meta', json_build_object('perm', "query_children"."perm"))
+        ) from "query_children" where "tests"."id" = "query_children"."parent_id" and "query_children"."perm" >= 2`,
       },
       where: {
         queryParents: '"query_children"."child_id" = ? and "query_children"."perm" >= 2',
@@ -92,5 +103,32 @@ export const TestSchema: ModelSchema = {
   }
 };
 
+export interface PermRelationshipItem extends RelationshipItem {
+  meta: {
+    perm: number;
+  };
+}
+
+export interface TestData extends ModelData {
+  type: 'tests';
+  id: number;
+  attributes?: {
+    id: number;
+    name: string;
+    otherName: string;
+    extended: { [key: string]: any };
+  };
+  relationships?: {
+    children: RelationshipItem[];
+    parents: RelationshipItem[];
+    valenceChildren: PermRelationshipItem[];
+    valenceParents: PermRelationshipItem[];
+    queryChildren: PermRelationshipItem[];
+    queryParents: PermRelationshipItem[];
+  };
+}
+
 @Schema(TestSchema)
-export class TestType extends Model<ModelData> { }
+export class TestType extends Model<TestData> {
+  static type = 'tests';
+}

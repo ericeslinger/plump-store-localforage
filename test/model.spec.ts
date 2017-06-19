@@ -2,9 +2,9 @@
 
 import * as chai from 'chai';
 
-import { Plump, Model, Schema, ModelData, MemoryStore } from 'plump';
-import { TestType } from './testType';
+import { Plump, MemoryStore, Model, Schema, ModelData } from 'plump';
 import { LocalForageStore } from '../src/index';
+import { TestType } from './testType';
 
 const store = new LocalForageStore({
   terminal: true,
@@ -12,16 +12,11 @@ const store = new LocalForageStore({
   storeName: 'localCache',
 });
 
-const plump = new Plump();
 
+const plump = new Plump(store);
 const expect = chai.expect;
 
-before(() => {
-  return plump.setTerminal(store)
-  .then(() => plump.addType(TestType));
-});
-
-/* eslint-env node, mocha*/
+before(() => plump.addType(TestType));
 
 describe('model', () => {
   describe('basic functionality', () => {
@@ -59,9 +54,8 @@ describe('model', () => {
       })
       class MiniModel extends Model<ModelData> { }
 
-      const tinyPlump = new Plump();
+      const tinyPlump = new Plump(new MemoryStore({ terminal: true }));
       return tinyPlump.addType(MiniModel)
-      .then(() => tinyPlump.setTerminal(new MemoryStore({ terminal: true })))
       .then(() => new MiniModel({ id: 101 }, tinyPlump).save())
       .then((i) => {
         return new Promise((resolve, reject) => {
@@ -73,14 +67,17 @@ describe('model', () => {
               resolve();
             }
           });
+        }).catch((err) => {
+          console.log(err);
+          console.log(err.stack);
         });
       });
     });
 
     it('should load data from datastores', () => {
-      return store.writeAttributes({ type: 'tests', attributes: { name: 'potato' } })
+      return store.writeAttributes({ type: TestType.type, attributes: { name: 'potato' } })
       .then(createdObject => {
-        const two = plump.find({ type: 'tests', id: createdObject.id });
+        const two = plump.find({ type: TestType.type, id: createdObject.id });
         return two.get()
         .then((v) => expect(v).to.have.nested.property('attributes.name', 'potato'));
       });
@@ -98,36 +95,45 @@ describe('model', () => {
     });
 
     it('should allow the creation of new models with an existing id', () => {
-      const otherPlump = new Plump();
       const otherStore = new MemoryStore({ terminal: true });
-      return otherPlump.setTerminal(otherStore)
-      .then(() => otherPlump.addType(TestType))
+      const otherPlump = new Plump(otherStore);
+      return otherPlump.addType(TestType)
       .then(() => new TestType({ name: 'potato', id: 101 }, otherPlump).save())
-      .then(() => otherPlump.find({ type: 'tests', id: 101 }).get())
+      .then(() => otherPlump.find({ type: TestType.type, id: 101 }).get())
       .then((v) => {
         expect(v).to.have.property('id', 101);
         expect(v.attributes).to.have.property('id', 101);
       });
     });
 
+    it('does not overwrite attributes on child addition', () => {
+      const one = new TestType({ name: 'potato', otherName: 'elephant' }, plump);
+      return one.save()
+      .then(() => plump.find({ type: TestType.type, id: one.id }).get())
+      .then((v) => expect(v).to.have.nested.property('attributes.otherName', 'elephant'))
+      .then(() => one.add('children', { type: TestType.type, id: 100 }).save())
+      .then(() => plump.find({ type: TestType.type, id: one.id }).get())
+      .then((v) => expect(v).to.have.nested.property('attributes.otherName', 'elephant'));
+    });
+
     it('should allow data to be deleted', () => {
       const one = new TestType({ name: 'potato' }, plump);
       return one.save()
-      .then(() => plump.find({ type: 'tests', id: one.id }).get())
+      .then(() => plump.find({ type: TestType.type, id: one.id }).get())
       .then((v) => expect(v).to.have.nested.property('attributes.name', 'potato'))
       .then(() => one.delete())
-      .then(() => plump.find({ type: 'tests', id: one.id }).get())
+      .then(() => plump.find({ type: TestType.type, id: one.id }).get())
       .then((v) => expect(v).to.be.null);
     });
 
     it('should allow fields to be loaded', () => {
       const one = new TestType({ name: 'p', otherName: 'q' }, plump);
       return one.save()
-      .then(() => plump.find({ type: 'tests', id: one.id }).get())
+      .then(() => plump.find({ type: TestType.type, id: one.id }).get())
       .then((v) => expect(v).to.have.nested.property('attributes.name', 'p'))
-      .then(() => plump.find({ type: 'tests', id: one.id }).get(['attributes', 'relationships']))
+      .then(() => plump.find({ type: TestType.type, id: one.id }).get(['attributes', 'relationships']))
       .then((v) => expect(v).to.deep.equal({
-        type: 'tests',
+        type: TestType.type,
         id: one.id,
         attributes: { name: 'p', otherName: 'q', id: one.id, extended: {} },
         relationships: {
@@ -166,7 +172,7 @@ describe('model', () => {
       .then(() => {
         // const hasManys = Object.keys(TestType.$fields).filter(field => TestType.$fields[field].type === 'hasMany');
 
-        return plump.find({ type: 'tests', id: one.id }).get();
+        return plump.find({ type: TestType.type, id: one.id }).get();
       }).then(data => {
         const baseFields = Object.keys(TestType.schema.attributes);
 
@@ -197,7 +203,7 @@ describe('model', () => {
     it('should add hasMany elements', () => {
       const one = new TestType({ name: 'frotato' }, plump);
       return one.save()
-      .then(() => one.add('children', { id: 100 }).save())
+      .then(() => one.add('children', { type: TestType.type, id: 100 }).save())
       .then(() => one.get('relationships.children'))
       .then((v) => expect(v.relationships.children).to.deep.equal([{ type: TestType.type, id: 100 }]));
     });
@@ -205,7 +211,7 @@ describe('model', () => {
     it('should add hasMany elements by child field', () => {
       const one = new TestType({ name: 'frotato' }, plump);
       return one.save()
-      .then(() => one.add('children', { id: 100 }).save())
+      .then(() => one.add('children', { type: TestType.type, id: 100 }).save())
       .then(() => one.get('relationships.children'))
       .then((v) => expect(v.relationships.children).to.deep.equal([{ type: TestType.type, id: 100 }]));
     });
@@ -213,18 +219,18 @@ describe('model', () => {
     it('should add several hasMany elements by child field', () => {
       const one = new TestType({ name: 'frotato' }, plump);
       return one.save()
-      .then(() => one.add('children', { id: 100 }).add('children', { type: TestType.type, id: 101 }).save())
+      .then(() => one.add('children', { type: TestType.type, id: 100 }).add('children', { type: TestType.type, id: 101 }).save())
       .then(() => one.get('relationships.children'))
-      .then((v) => expect(v.relationships.children).to.deep.equal([{ type: TestType.type, id: 100 }, { type: TestType.type, id: 101 }]));
+      .then((v) => expect(v.relationships.children).to.deep.equal([100, 101].map(id => ({ type: TestType.type, id }))));
     });
 
     it('should remove hasMany elements', () => {
       const one = new TestType({ name: 'frotato' }, plump);
       return one.save()
-      .then(() => one.add('children', { id: 100 }).save())
+      .then(() => one.add('children', { type: TestType.type, id: 100 }).save())
       .then(() => one.get('relationships.children'))
       .then((v) => expect(v.relationships.children).to.deep.equal([{ type: TestType.type, id: 100 }]))
-      .then(() => one.remove('children', { id: 100 }).save())
+      .then(() => one.remove('children', { type: TestType.type, id: 100 }).save())
       .then(() => one.get('relationships.children'))
       .then((v) => expect(v.relationships.children).to.deep.equal([]));
     });
@@ -232,12 +238,16 @@ describe('model', () => {
     it('should include valence in hasMany operations', () => {
       const one = new TestType({ name: 'grotato' }, plump);
       return one.save()
-      .then(() => one.add('valenceChildren', { id: 100, meta: { perm: 1 } }).save())
+      .then(() => one.add('valenceChildren', { type: TestType.type, id: 100, meta: { perm: 1 } }).save())
       .then(() => one.get('relationships.valenceChildren'))
-      .then((v) => expect(v.relationships.valenceChildren).to.deep.equal([{ type: TestType.type, id: 100, meta: { perm: 1 } }]))
-      .then(() => one.modifyRelationship('valenceChildren', { id: 100, meta: { perm: 2 } }).save())
+      .then((v) => expect(v.relationships.valenceChildren).to.deep.equal([
+        { type: TestType.type, id: 100, meta: { perm: 1 } },
+      ]))
+      .then(() => one.modifyRelationship('valenceChildren', { type: TestType.type, id: 100, meta: { perm: 2 } }).save())
       .then(() => one.get('relationships.valenceChildren'))
-      .then((v) => expect(v.relationships.valenceChildren).to.deep.equal([{ type: TestType.type, id: 100, meta: { perm: 2 } }]));
+      .then((v) => expect(v.relationships.valenceChildren).to.deep.equal([
+        { type: TestType.type, id: 100, meta: { perm: 2 } },
+      ]));
     });
   });
 
@@ -253,7 +263,7 @@ describe('model', () => {
         .then(() => onePrime.get('relationships.children'))
         .then((res) => expect(res).to.have.property('relationships')
         .that.deep.equals({ children: [] }))
-        .then(() => one.add('children', { id: 100 }).save())
+        .then(() => one.add('children', { type: TestType.type, id: 100 }).save())
         .then(() => one.get('relationships.children'))
         .then((res) => expect(res).to.have.property('relationships')
         .that.deep.equals({ children: [{ type: TestType.type, id: 100 }] }))
@@ -326,12 +336,41 @@ describe('model', () => {
       });
     });
 
+    it('should allow inflatable subscription to model sideloads', () => {
+      return new Promise((resolve, reject) => {
+        const one = new TestType({ name: 'potato' }, plump);
+        const children = [
+          new TestType({ name: 'potato one' }, plump),
+          new TestType({ name: 'potato two' }, plump),
+          new TestType({ name: 'potato three' }, plump),
+          new TestType({ name: 'potato four' }, plump),
+          new TestType({ name: 'potato five' }, plump),
+        ];
+        let phase = 0;
+        one.save()
+        .then(() => Promise.all(children.map(c => c.save())))
+        .then(() => Promise.all(children.map(c => one.add('children', c))))
+        .then(() => {
+          const subscription = one.asObservable(['attributes', 'relationships'])
+          .inflateRelationship('children')
+          .subscribe(v => {
+            if (v.length === children.length) {
+              expect(v.map(i => i.attributes.name))
+              .to.have.members(['potato one', 'potato two', 'potato three', 'potato four', 'potato five']);
+              resolve();
+            }
+          });
+        })
+        .then(() => one.save());
+      });
+    });
+
     it('should allow subscription to model sideloads', () => {
       return new Promise((resolve, reject) => {
         const one = new TestType({ name: 'potato' }, plump);
         let phase = 0;
         one.save()
-        .then(() => one.add('children', { id: 100 }).save())
+        .then(() => one.add('children', { type: TestType.type, id: 100 }).save())
         .then(() => {
           const subscription = one.subscribe(['attributes', 'relationships'], {
             error: (err) => {
@@ -369,7 +408,7 @@ describe('model', () => {
             }
           });
         })
-        .then(() => one.add('children', { id: 101 }).save());
+        .then(() => one.add('children', { type: TestType.type, id: 101 }).save());
       });
     });
 
@@ -389,14 +428,13 @@ describe('model', () => {
         };
         const delayedMemstore = new Proxy(new MemoryStore({ terminal: true }), DelayProxy);
         const coldMemstore = new MemoryStore();
-        const otherPlump = new Plump();
+        const otherPlump = new Plump(delayedMemstore);
         // {
         //   storage: [coldMemstore, delayedMemstore],
         //   types: [TestType],
         // });
         otherPlump.addType(TestType)
         .then(() => otherPlump.addCache(coldMemstore))
-        .then(() => otherPlump.setTerminal(delayedMemstore))
         .then(() => {
           const one = new TestType({ name: 'slowtato' }, otherPlump);
           one.save()
@@ -404,7 +442,7 @@ describe('model', () => {
           .then((val) => {
             return coldMemstore.cache({
               id: val.id,
-              type: 'tests',
+              type: TestType.type,
               attributes: {
                 name: 'potato',
                 id: val.id,
@@ -412,7 +450,7 @@ describe('model', () => {
             })
             .then(() => {
               let phase = 0;
-              const two = otherPlump.find({ type: 'tests', id: val.id });
+              const two = otherPlump.find({ type: TestType.type, id: val.id });
               const subscription = two.subscribe({
                 error: (err) => {
                   throw err;
