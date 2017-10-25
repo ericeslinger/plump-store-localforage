@@ -1,0 +1,1 @@
+export { LocalForageStore } from './localforage';
