@@ -2,8 +2,15 @@
 /* eslint no-shadow: 0, max-len: 0 */
 
 import { TestType } from './testType';
-import { MemoryStore, Plump, Schema, Model, ModelData } from 'plump';
-import * as mergeOptions from 'merge-options';
+import {
+  MemoryStore,
+  Plump,
+  Model,
+  ModelData,
+  Schema,
+  TerminalStore,
+} from 'plump';
+import mergeOptions from 'merge-options';
 
 import * as chai from 'chai';
 
@@ -31,14 +38,14 @@ export function testSuite(context, storeOpts) {
     storeOpts,
   );
   context.describe(store.name, () => {
-    let actualStore;
+    let actualStore: TerminalStore;
     context.before(() => {
-      return (store.before || (() => Promise.resolve()))(
-        actualStore,
-      ).then(() => {
-        actualStore = new store.ctor(store.opts); // eslint-disable-line new-cap
-        actualStore.addSchema(TestType);
-      });
+      return (store.before || (() => Promise.resolve()))(actualStore).then(
+        () => {
+          actualStore = new store.ctor(store.opts); // eslint-disable-line new-cap
+          actualStore.addSchema(TestType);
+        },
+      );
     });
 
     context.describe('core CRUD', () => {
@@ -49,10 +56,10 @@ export function testSuite(context, storeOpts) {
             .writeAttributes(sampleObject)
             .then(createdObject => {
               return actualStore
-                .read({ type: TestType.type, id: createdObject.id }, [
-                  'attributes',
-                  'relationships',
-                ])
+                .read({
+                  item: { type: TestType.type, id: createdObject.id },
+                  fields: ['attributes', 'relationships'],
+                })
                 .then(v => {
                   return expect(v).to.deep.equal(
                     mergeOptions({}, sampleObject, {
@@ -62,8 +69,6 @@ export function testSuite(context, storeOpts) {
                         children: [],
                         valenceParents: [],
                         valenceChildren: [],
-                        queryParents: [],
-                        queryChildren: [],
                       },
                       attributes: {
                         id: createdObject.id,
@@ -83,18 +88,15 @@ export function testSuite(context, storeOpts) {
           });
           return actualStore.writeAttributes(modObject).then(updatedObject => {
             return actualStore
-              .read({ type: TestType.type, id: updatedObject.id }, 'attributes')
+              .read({
+                item: { type: TestType.type, id: updatedObject.id },
+                fields: ['attributes'],
+              })
               .then(v => {
-                return expect(v).to.deep.equal(
-                  mergeOptions({}, modObject, {
-                    id: createdObject.id,
-                    relationships: {},
-                    attributes: {
-                      id: createdObject.id,
-                      otherName: '',
-                    },
-                  }),
-                );
+                expect(v.id).to.equal(createdObject.id);
+                expect(v.attributes.id).to.equal(createdObject.id);
+                expect(v.attributes.name).to.equal(modObject.attributes.name);
+                expect(v.attributes.otherName).to.equal('');
               });
           });
         });
@@ -110,11 +112,6 @@ export function testSuite(context, storeOpts) {
             when: { type: 'date' },
           },
           relationships: {},
-          storeData: {
-            sql: {
-              tableName: 'datedTests',
-            },
-          },
         })
         class DatedType extends Model<ModelData> {
           static type = 'datedTests';
@@ -130,7 +127,10 @@ export function testSuite(context, storeOpts) {
               },
             })
             .then(inserted => {
-              return actualStore.read({ type: 'datedTests', id: inserted.id });
+              return actualStore.read({
+                item: { type: 'datedTests', id: inserted.id },
+                fields: ['attributes', 'relationships'],
+              });
             })
             .then(v => {
               expect(v.attributes.when instanceof Date).to.equal(true);
@@ -142,7 +142,10 @@ export function testSuite(context, storeOpts) {
       context.it('allows for deletion of objects by id', () => {
         return actualStore.writeAttributes(sampleObject).then(createdObject => {
           return actualStore
-            .read({ type: TestType.type, id: createdObject.id })
+            .read({
+              item: { type: TestType.type, id: createdObject.id },
+              fields: ['attributes', 'relationships'],
+            })
             .then(v =>
               expect(v).to.have.nested.property('attributes.name', 'potato'),
             )
@@ -150,7 +153,10 @@ export function testSuite(context, storeOpts) {
               actualStore.delete({ type: TestType.type, id: createdObject.id }),
             )
             .then(() =>
-              actualStore.read({ type: TestType.type, id: createdObject.id }),
+              actualStore.read({
+                item: { type: TestType.type, id: createdObject.id },
+                fields: ['attributes', 'relationships'],
+              }),
             )
             .then(v => expect(v).to.be.null);
         });
@@ -188,10 +194,10 @@ export function testSuite(context, storeOpts) {
               ),
             )
             .then(() => {
-              return actualStore.read(
-                { type: TestType.type, id: createdObject.id },
-                ['attributes', 'relationships.children'],
-              );
+              return actualStore.read({
+                item: { type: TestType.type, id: createdObject.id },
+                fields: ['attributes', 'relationships.children'],
+              });
             })
             .then(v => {
               expect(v).to.have.nested.property('attributes.name', 'potato');
@@ -239,9 +245,10 @@ export function testSuite(context, storeOpts) {
               ),
             )
             .then(() =>
-              actualStore.read({ type: TestType.type, id: createdObject.id }, [
-                'relationships.children',
-              ]),
+              actualStore.read({
+                item: { type: TestType.type, id: createdObject.id },
+                fields: ['relationships.children'],
+              }),
             )
             .then(v => {
               expect(v.relationships.children).to.deep.equal([
@@ -250,10 +257,10 @@ export function testSuite(context, storeOpts) {
                 { type: TestType.type, id: 102 },
                 { type: TestType.type, id: 103 },
               ]);
-              return actualStore.read(
-                { type: TestType.type, id: createdObject.id },
-                ['relationships.parents'],
-              );
+              return actualStore.read({
+                item: { type: TestType.type, id: createdObject.id },
+                fields: ['relationships.parents'],
+              });
             })
             .then(v =>
               expect(v.relationships.parents).to.deep.equal([
@@ -272,10 +279,10 @@ export function testSuite(context, storeOpts) {
               { id: 100, meta: { perm: 1 } },
             )
             .then(() =>
-              actualStore.read(
-                { type: TestType.type, id: createdObject.id },
-                'relationships.valenceChildren',
-              ),
+              actualStore.read({
+                item: { type: TestType.type, id: createdObject.id },
+                fields: ['relationships.valenceChildren'],
+              }),
             )
             .then(v =>
               expect(v.relationships.valenceChildren).to.deep.equal([
@@ -294,10 +301,10 @@ export function testSuite(context, storeOpts) {
               { id: 100, meta: { perm: 1 } },
             )
             .then(() =>
-              actualStore.read(
-                { type: TestType.type, id: createdObject.id },
-                'relationships.valenceChildren',
-              ),
+              actualStore.read({
+                item: { type: TestType.type, id: createdObject.id },
+                fields: ['relationships.valenceChildren'],
+              }),
             )
             .then(v =>
               expect(v.relationships.valenceChildren).to.deep.equal([
@@ -312,10 +319,10 @@ export function testSuite(context, storeOpts) {
               ),
             )
             .then(() =>
-              actualStore.read(
-                { type: TestType.type, id: createdObject.id },
-                'relationships.valenceChildren',
-              ),
+              actualStore.read({
+                item: { type: TestType.type, id: createdObject.id },
+                fields: ['relationships.valenceChildren'],
+              }),
             )
             .then(v =>
               expect(v.relationships.valenceChildren).to.deep.equal([
@@ -334,10 +341,10 @@ export function testSuite(context, storeOpts) {
               { type: TestType.type, id: 100 },
             )
             .then(() =>
-              actualStore.read(
-                { type: TestType.type, id: createdObject.id },
-                'relationships.children',
-              ),
+              actualStore.read({
+                item: { type: TestType.type, id: createdObject.id },
+                fields: ['relationships.children'],
+              }),
             )
             .then(v =>
               expect(v.relationships.children).to.deep.equal([
@@ -352,10 +359,10 @@ export function testSuite(context, storeOpts) {
               ),
             )
             .then(() =>
-              actualStore.read(
-                { type: TestType.type, id: createdObject.id },
-                'relationships.children',
-              ),
+              actualStore.read({
+                item: { type: TestType.type, id: createdObject.id },
+                fields: ['relationships.children'],
+              }),
             )
             .then(v => expect(v.relationships.children).to.deep.equal([]));
         });
@@ -367,7 +374,7 @@ export function testSuite(context, storeOpts) {
         'should pass basic write-invalidation events to other datastores',
         () => {
           const memstore = new MemoryStore();
-          const testPlump = new Plump(actualStore);
+          const testPlump = new Plump(actualStore as TerminalStore);
           return testPlump
             .addCache(memstore)
             .then(() => testPlump.addType(TestType))
@@ -379,13 +386,19 @@ export function testSuite(context, storeOpts) {
             )
             .then(createdObject => {
               return actualStore
-                .read({ type: TestType.type, id: createdObject.id })
+                .read({
+                  item: { type: TestType.type, id: createdObject.id },
+                  fields: ['attributes', 'relationships'],
+                })
                 .then(() => {
                   return new Promise(resolve => setTimeout(resolve, 100))
                     .then(() =>
                       memstore.read({
-                        type: TestType.type,
-                        id: createdObject.id,
+                        item: {
+                          type: TestType.type,
+                          id: createdObject.id,
+                        },
+                        fields: ['attributes', 'relationships'],
                       }),
                     )
                     .then(v =>
@@ -408,8 +421,11 @@ export function testSuite(context, storeOpts) {
                     )
                     .then(() =>
                       memstore.read({
-                        type: TestType.type,
-                        id: createdObject.id,
+                        item: {
+                          type: TestType.type,
+                          id: createdObject.id,
+                        },
+                        fields: ['attributes', 'relationships'],
                       }),
                     )
                     .then(v => expect(v).to.be.null);
@@ -435,7 +451,10 @@ export function testSuite(context, storeOpts) {
           })
           .then(createdObject => {
             testItem = createdObject;
-            return actualStore.read({ type: TestType.type, id: testItem.id });
+            return actualStore.read({
+              item: { type: TestType.type, id: testItem.id },
+              fields: ['attributes', 'relationships'],
+            });
           })
           .then(v =>
             expect(v).to.have.nested.property('attributes.name', 'potato'),
@@ -446,10 +465,18 @@ export function testSuite(context, storeOpts) {
               .addType(TestType)
               .then(() => testPlump.addCache(memstore));
           })
-          .then(() => memstore.read({ type: TestType.type, id: testItem.id }))
+          .then(() =>
+            memstore.read({
+              item: { type: TestType.type, id: testItem.id },
+              fields: ['attributes', 'relationships'],
+            }),
+          )
           .then(v => expect(v).to.be.null)
           .then(() =>
-            actualStore.read({ type: TestType.type, id: testItem.id }),
+            actualStore.read({
+              item: { type: TestType.type, id: testItem.id },
+              fields: ['attributes', 'relationships'],
+            }),
           )
           .then(() => {
             // NOTE: this timeout is a hack, it is because
@@ -457,7 +484,12 @@ export function testSuite(context, storeOpts) {
             // the promise from returning
             return new Promise(resolve => setTimeout(resolve, 100));
           })
-          .then(() => memstore.read({ type: TestType.type, id: testItem.id }))
+          .then(() =>
+            memstore.read({
+              item: { type: TestType.type, id: testItem.id },
+              fields: ['attributes', 'relationships'],
+            }),
+          )
           .then(v =>
             expect(v).to.have.nested.property('attributes.name', 'potato'),
           );
@@ -480,7 +512,10 @@ export function testSuite(context, storeOpts) {
             )
             .then(createdObject => {
               testItem = createdObject;
-              return actualStore.read({ type: TestType.type, id: testItem.id });
+              return actualStore.read({
+                item: { type: TestType.type, id: testItem.id },
+                fields: ['attributes', 'relationships'],
+              });
             })
             .then(v =>
               expect(v).to.have.nested.property('attributes.name', 'potato'),
@@ -492,15 +527,20 @@ export function testSuite(context, storeOpts) {
                 { type: TestType.type, id: 100 },
               ),
             )
-            .then(() => memstore.read({ type: TestType.type, id: testItem.id }))
+            .then(() =>
+              memstore.read({
+                item: { type: TestType.type, id: testItem.id },
+                fields: ['attributes', 'relationships'],
+              }),
+            )
             .then(v =>
               expect(v).to.not.have.nested.property('relationships.children'),
             )
             .then(() =>
-              actualStore.read(
-                { type: TestType.type, id: testItem.id },
-                'children',
-              ),
+              actualStore.read({
+                item: { type: TestType.type, id: testItem.id },
+                fields: ['relationships.children'],
+              }),
             )
             .then(() => {
               // NOTE: this timeout is a hack, it is because
@@ -509,10 +549,10 @@ export function testSuite(context, storeOpts) {
               return new Promise(resolve => setTimeout(resolve, 100));
             })
             .then(() =>
-              memstore.read(
-                { type: TestType.type, id: testItem.id },
-                'children',
-              ),
+              memstore.read({
+                item: { type: TestType.type, id: testItem.id },
+                fields: ['relationships.children'],
+              }),
             )
             .then(v =>
               expect(v.relationships.children).to.deep.equal([
@@ -527,7 +567,12 @@ export function testSuite(context, storeOpts) {
               ),
             )
             .then(() => new Promise(resolve => setTimeout(resolve, 100)))
-            .then(() => memstore.read({ type: TestType.type, id: testItem.id }))
+            .then(() =>
+              memstore.read({
+                item: { type: TestType.type, id: testItem.id },
+                fields: ['attributes', 'relationships'],
+              }),
+            )
             .then(v =>
               expect(v).to.not.have.nested.property('relationships.children'),
             )
@@ -543,7 +588,6 @@ export function testSuite(context, storeOpts) {
         'should pass cacheable-read events on hasMany relationships to other datastores',
         () => {
           let testItem;
-          let memstore;
           return actualStore
             .writeAttributes({
               type: TestType.type,
@@ -551,7 +595,10 @@ export function testSuite(context, storeOpts) {
             })
             .then(createdObject => {
               testItem = createdObject;
-              return actualStore.read({ type: TestType.type, id: testItem.id });
+              return actualStore.read({
+                item: { type: TestType.type, id: testItem.id },
+                fields: ['attributes', 'relationships'],
+              });
             })
             .then(v =>
               expect(v).to.have.nested.property('attributes.name', 'potato'),
@@ -565,29 +612,32 @@ export function testSuite(context, storeOpts) {
             )
             .then(() => {
               const testPlump = new Plump(actualStore);
-              memstore = new MemoryStore();
+              const memstore = new MemoryStore();
               return testPlump
                 .addType(TestType)
                 .then(() => {
                   return testPlump
                     .addCache(memstore)
                     .then(() =>
-                      memstore.read({ type: TestType.type, id: testItem.id }),
+                      memstore.read({
+                        item: { type: TestType.type, id: testItem.id },
+                        fields: ['attributes', 'relationships'],
+                      }),
                     )
                     .then(v => expect(v).to.be.null);
                 })
                 .then(() => {
-                  return actualStore.read(
-                    { type: TestType.type, id: testItem.id },
-                    'children',
-                  );
+                  return actualStore.read({
+                    item: { type: TestType.type, id: testItem.id },
+                    fields: ['relationships.children'],
+                  });
                 })
                 .then(() => new Promise(resolve => setTimeout(resolve, 100)))
                 .then(() =>
-                  memstore.read(
-                    { type: TestType.type, id: testItem.id },
-                    'children',
-                  ),
+                  memstore.read({
+                    item: { type: TestType.type, id: testItem.id },
+                    fields: ['children'],
+                  }),
                 )
                 .then(v =>
                   expect(v.relationships.children).to.deep.equal([

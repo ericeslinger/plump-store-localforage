@@ -30,6 +30,9 @@ build/Release
 node_modules
 jspm_packages
 
+# test build
+testbuild
+
 # Optional npm cache directory
 .npm
 

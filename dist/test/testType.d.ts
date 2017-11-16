@@ -1,7 +1,6 @@
 import { ModelSchema, RelationshipSchema, Model, ModelData, RelationshipItem } from 'plump';
 export declare const ChildrenSchema: RelationshipSchema;
 export declare const ValenceChildrenSchema: RelationshipSchema;
-export declare const QueryChildrenSchema: RelationshipSchema;
 export declare const TestSchema: ModelSchema;
 export interface PermRelationshipItem extends RelationshipItem {
     meta: {
@@ -24,8 +23,6 @@ export interface TestData extends ModelData {
         parents: RelationshipItem[];
         valenceChildren: PermRelationshipItem[];
         valenceParents: PermRelationshipItem[];
-        queryChildren: PermRelationshipItem[];
-        queryParents: PermRelationshipItem[];
     };
 }
 export declare class TestType extends Model<TestData> {

@@ -1,6 +1,6 @@
 {
   "name": "plump-store-localforage",
-  "version": "0.20.1",
+  "version": "0.25.0",
   "description": "Plump plugin for LocalForage",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,15 +9,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kstf/plump-store-localforage.git"
+    "url": "git+https://github.com/plumpstack/plump-store-localforage.git"
   },
   "keywords": ["typescript", "orm", "datastore", "activerecord"],
   "author": "Eric Eslinger <eric.eslinger@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/kstf/plump-store-localforage/issues"
+    "url": "https://github.com/plumpstack/plump-store-localforage/issues"
   },
-  "homepage": "https://github.com/kstf/plump-store-localforage#readme",
+  "homepage": "https://github.com/plumpstack/plump-store-localforage#readme",
   "devDependencies": {
     "@types/chai": "^4.0.4",
     "@types/chai-as-promised": "7.1.0",
@@ -41,7 +41,7 @@
     "tslint-eslint-rules": "^4.1.1",
     "typescript": "^2.5.3",
     "webpack": "^3.6.0",
-    "plump": "^0.20.0"
+    "plump": "0.25.0"
   },
   "dependencies": {
     "localforage": "^1.5.2",
